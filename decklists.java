@@ -75,7 +75,10 @@ public class decklists {
     }
 
     private static TreeMap<String, String> cards = new TreeMap<String, String>();
-    
+    private static String decklistPrefix = "latexGeneratedDecklist";
+    private static String decknamePrefix = "latexGeneratedDeckname";
+    private static StringBuilder flush = new StringBuilder();
+    private static Integer deckNum = 1;
     public static void main(String[] args) {
 	//each argument is expected to be a decklist file
 	//the name of the file will be considered the name of the deck
@@ -98,12 +101,17 @@ public class decklists {
 	//extra-commands for latex (if you're a pro)
 
 	process_preamble();
+
+	process_netrunner_library();
 	
 	for(String s : args) {
 	    process_decklist(s);
+	    deckNum++;
 	}
 
-	process_netrunner_library();
+	System.out.println(flush.toString());
+
+	System.out.println("\\end{document}");
     }
 
     private static void process_netrunner_library() {
@@ -116,7 +124,7 @@ public class decklists {
 	String libraryJSON = read_netrunner_library(fname);
 
 	boolean valid = libraryJSON != null;
-	System.out.println("Library read: " + valid);
+	System.out.println("%Library read: " + valid);
 
 	Gson gson = new Gson();
 	Library library = gson.fromJson(libraryJSON, Library.class);
@@ -125,8 +133,8 @@ public class decklists {
 	    //put in cards (name, type)
 	    cards.put(c.title, c.type_code);
 	}
-	System.out.println(library.data.size());
-	
+
+	System.out.println("%" + library.data.size());	
     }
 
     private static String read_netrunner_library(String fname /*NRDB_cards.json*/){
@@ -170,27 +178,94 @@ public class decklists {
 	}
 
 
-	System.out.println("Deck Name: " + deckName);
-	System.out.println("Identity:  " + idName);
+	//System.out.println("Deck Name: " + deckName);
+	//System.out.println("Identity:  " + idName);
 
-	TreeMap<String, Integer> cardsInDeck = new TreeMap<>();
+	TreeMap<String, TreeMap<String, Integer>> bins = new TreeMap<>();
 	
-	//now we want to build a ditionary of card name - card numbers
+	//now we want to build a dictionary of card name - card numbers
 	for(String line : decklist) {
 	    if(line.length() > 0) {
 		try {
 		    String parts[] = line.split(" ", 2);
 		    int numInDeck = Integer.parseInt(parts[0]);
 		    String cardName = parts[1];
-		    System.out.println(String.format("Card: %s, Copies: %d", cardName, numInDeck));
-		    cardsInDeck.put(cardName, numInDeck);
+
+		    //now that we have the cardName, we can get the type from our dictionary
+		    String type = cards.get(cardName);
+		    if(type == null)
+			type = "Unassigned";
+
+		    //now what we want to do is select a bin based on type
+		    TreeMap<String, Integer> bin = bins.get(type);
+		    if(bin == null) {
+			bin = new TreeMap<String, Integer>();
+			bins.put(type, bin);
+		    }
+
+		    bin.put(cardName, numInDeck);
 		} catch (Exception e) {
 		    //do nothing - we just skip this line
 		}		
 	    }
 	}
+
+	System.out.println("\\newcommand{\\" + decklistPrefix + ns(deckNum) +  "}{");
+	System.out.println("\\textbf{" + idName + "}\\\\");
+	boolean _first = true;
+	//now we have a list of binned cards: let's print that out
+	for(Map.Entry<String, TreeMap<String, Integer>> entry : bins.entrySet()) {
+	    String type = entry.getKey();
+	    TreeMap<String, Integer> bin = entry.getValue();
+	    type = type.substring(0, 1).toUpperCase() + type.substring(1);
+
+	    if(!_first)
+		System.out.println("\\clb");
+	    _first = false;
+
+	    System.out.println(String.format("\\textbf{%s (%d)}\\\\", type, bin.size()));
+
+	    for(Map.Entry<String, Integer> entry2 : bin.entrySet()) {
+		String name = entry2.getKey();
+		
+		Integer num = entry2.getValue();
+		System.out.println(String.format("%d %s\\\\", num, name));
+	    }
+	}
+	System.out.println("}");
+
+	System.out.println("\\newcommand{\\" + decknamePrefix + ns(deckNum) + "}{\\deckname{" + escape(deckName) + "}}");
+
+	flush.append("\\decklistCard{\\" + decknamePrefix+ns(deckNum) + "}{\\" + decklistPrefix + ns(deckNum) + "}\n");
+	if(deckNum %2 == 0)
+	    flush.append("\\\\ \n\\\\ \n");
     }
 
+    private static String escape(String str) {
+	String res = "";
+	char[] esc = {'{', '}', '_', '^', '#', '&', '$', '%', '~'};
+	
+	for (char c: str.toCharArray()) {
+	    for(int i = 0; i < esc.length; i++)
+		if(c == esc[i])
+		    res += '\\';
+	    res += c;
+	}
+
+	return res;
+
+    }
+    
+    private static String ns(int num) {
+	String str = "" + num;
+	String res = "";
+	for (char c: str.toCharArray()) {
+	    res += (char)(c + 21);
+	}
+
+	return res;
+    }
+    
     private static void process_preamble() {
 	List<String> packages = read_packages("packages.conf");
 	System.out.println(process_packages(packages));
@@ -277,6 +352,7 @@ public class decklists {
 	    res.add("{\\stripcolor}{cyan}");
 	    res.add("{\\scaleFactor}{1.05}");
 	    res.add("{\\clb}{\\vspace{1mm}\\hline\\\\ \\vspace{1mm}}");
+	    res.add("{\\deckname}[1]{\\parbox{3.25in}{\\center #1}}");
 	}
 
 	return res;
