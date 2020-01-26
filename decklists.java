@@ -48,6 +48,9 @@ public class decklists {
 
 	List<String> commands = read_commands("commands.conf");
 	System.out.println(process_commands(commands));
+
+	List<String> card = read_card("card.conf");
+	System.out.println(process_card(card));
     }
 
     
@@ -73,6 +76,13 @@ public class decklists {
 
 	return builder.toString();
     }
+
+    private static String process_card(List<String> card) {	
+	StringBuilder builder = new StringBuilder();
+	builder = process_helper(builder, "%s%n", card);
+
+	return builder.toString();
+    }
     
     private static StringBuilder process_helper(StringBuilder builder, String format, List<String> items) {
 	for(String s : items) {
@@ -89,6 +99,27 @@ public class decklists {
     }
 
     //SECTION: PROCESS FILES
+    private static List<String> read_card(String fname /*card.conf*/) {
+	List<String> res;
+	try (Stream<String> lines = Files.lines(Paths.get(fname))) {
+	    res = lines.collect(Collectors.toList());
+	} catch (Exception e) {
+	    res = new ArrayList<String>();
+	    res.add("\\newcommand{\\decklistCard}[2]{)");
+	    res.add("\\scalebox{\\scaleFactor}{");
+	    res.add("\\begin{tikzpicture}");
+	    res.add("\\draw[rounded corners=\\cardroundingradius] (0,0) rectangle (\\cardwidth,\\cardheight);");
+	    res.add("\\fill[\\stripcolor,rounded corners=\\striproundingradius] (\\strippadding,\\strippadding) rectangle (\\strippadding+\\stripwidth,\\cardheight-\\strippadding) node[rotate=90,above left,black,font=\\stripfontsize] {#1};");
+	    res.add("\\node[text width=(\\cardwidth-\\strippadding-\\stripwidth-2*\\textpadding)*1cm,below right,inner sep=0] at (\\strippadding+\\stripwidth+\\textpadding,\\cardheight-\\textpadding)"); 
+	    res.add("{");  
+	    res.add("{\\decklistsize #2}");
+	    res.add("};");
+	    res.add("\\end{tikzpicture}");
+	    res.add("}}");
+	}
+
+	return res;
+    }
     private static List<String> read_commands(String fname /*commands.conf*/) {
 	List<String> res;
 	try (Stream<String> lines = Files.lines(Paths.get(fname))) {
@@ -97,7 +128,7 @@ public class decklists {
 	    res = new ArrayList<String>();
 	    res.add("{\\stripfontsize}{\\huge}");
 	    res.add("{\\decklistsize}{\\tiny}");
-	    res.add("{\\stripcolor}{\\cyan}");
+	    res.add("{\\stripcolor}{cyan}");
 	    res.add("{\\scaleFactor}{1.05}");
 	    res.add("{\\clb}{\\vspace{1mm}\\hline\\\\ \\vspace{1mm}}");
 	}
