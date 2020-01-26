@@ -25,20 +25,27 @@ public class decklists {
 	//  ...
 	//  n card m
 
-	//additional options: if the first argument is -c, the second argument is a config file
-	//config file should have:
-	// Font col
-	// Background Col
-	// side-Bar font col
-	// Side-Bar col
-
 	//extra-commands for latex (if you're a pro)
 
 	process_preamble();
+	
+	for(String s : args) {
+	    process_decklist(s);
+	}
     }
 
+    private static void process_decklist(String s) {
+	//first thing to do is read the decklist into a list
+	List<String> decklist;
 
-    
+	try (Stream<String> lines = Files.lines(Paths.get(s))){
+	    decklist = lines.collect(Collectors.toList());
+	} catch (Exception e) {
+	    System.err.println("Unable to read decklist in file " + s);
+	    return;
+	}
+    }
+
     private static void process_preamble() {
 	List<String> packages = read_packages("packages.conf");
 	System.out.println(process_packages(packages));
@@ -90,12 +97,6 @@ public class decklists {
 	}
 
 	return builder;
-    }
-    
-    
-    
-    private static void process_decklist() { //TODO
-	
     }
 
     //SECTION: PROCESS FILES
