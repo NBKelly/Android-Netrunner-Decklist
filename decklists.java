@@ -4,8 +4,78 @@
 import java.util.*;
 import java.util.stream.*;
 import java.nio.file.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import com.google.gson.Gson;
 
 public class decklists {
+    private class Library {
+	public String imageUrlTemplate;
+	public List<Card> data;
+	public Integer total;
+	public boolean success;
+	public String version_number;
+	public String last_updated;
+    }
+
+    private class Card {
+	public String code;
+	public Integer deck_limit;
+	public String faction_code;
+	public Integer faction_cost;
+	
+	public String flavor;
+	public String illustrator;
+	public String influence_limit;
+	public String keywords;
+	
+	public Integer minimum_deck_size;
+	public String image_url;
+	public String pack_code;
+	public Integer position;
+
+	public Integer quantity;
+	public String side_code;
+	public String text;
+	public String title;
+	
+	public String type_code;
+	public Boolean uniqueness;
+	public Integer base_link;
+
+	public Card(String code, int deck_limit, String faction_code, int faction_cost,
+		    String flavor, String illustrator, String influence_limit, String keywords,
+		    int minimum_deck_size, String image_url, String pack_code, int position,
+		    int quantity, String side_code, String text, String title,
+		    String type_code, boolean uniqueness, int base_link) {
+	    this.code = code;
+	    this.deck_limit = deck_limit;
+	    this.faction_code = faction_code;
+	    this.faction_cost = faction_cost;
+
+	    this.flavor = flavor;
+	    this.illustrator = illustrator;
+	    this.influence_limit = influence_limit;
+	    this.keywords = keywords;
+
+	    this.minimum_deck_size = minimum_deck_size;
+	    this.image_url = image_url;
+	    this.pack_code = pack_code;
+	    this.position = position;
+
+	    this.quantity = quantity;
+	    this.side_code = side_code;
+	    this.text = text;
+	    this.title = title;
+
+	    this.type_code = type_code;
+	    this.uniqueness = uniqueness;
+	    this.base_link = base_link;
+	}
+    }
+
+    private static TreeMap<String, String> cards = new TreeMap<String, String>();
+    
     public static void main(String[] args) {
 	//each argument is expected to be a decklist file
 	//the name of the file will be considered the name of the deck
@@ -32,8 +102,44 @@ public class decklists {
 	for(String s : args) {
 	    process_decklist(s);
 	}
+
+	process_netrunner_library();
     }
 
+    private static void process_netrunner_library() {
+	//for the time being, we'll just use a file saved on disk
+	//later on, we should be taking it directly from the API (and saving it to a file, then always using that file)
+	//but we can do that later :)
+	String fname = "NRDB_cards.json";
+
+	//now let us try to process this file to a string
+	String libraryJSON = read_netrunner_library(fname);
+
+	boolean valid = libraryJSON != null;
+	System.out.println("Library read: " + valid);
+
+	Gson gson = new Gson();
+	Library library = gson.fromJson(libraryJSON, Library.class);
+
+	for(Card c : library.data) {
+	    //put in cards (name, type)
+	    cards.put(c.title, c.type_code);
+	}
+	System.out.println(library.data.size());
+	
+    }
+
+    private static String read_netrunner_library(String fname /*NRDB_cards.json*/){
+	StringBuilder builder = new StringBuilder();
+	try (Stream<String> stream = Files.lines( Paths.get(fname), StandardCharsets.UTF_8)) {
+	    stream.forEach(s -> builder.append(s).append("\n"));
+	} catch (IOException e) {
+	    e.printStackTrace();
+	    return null;
+	}
+	
+	return builder.toString();
+    }
     private static void process_decklist(String s) {
 	//first thing to do is read the decklist into a list
 	List<String> decklist;
