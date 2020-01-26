@@ -44,6 +44,45 @@ public class decklists {
 	    System.err.println("Unable to read decklist in file " + s);
 	    return;
 	}
+
+	
+	String first = decklist.get(0);
+	String deckName = s;
+	String idName = "Unspecified ID";
+
+	//see if the first line is a deck-name. If it is, we use that.
+	if(first.length() > 1 && first.charAt(0) == '_') {
+	    deckName = first.substring(1);
+	    decklist.remove(0);
+	}
+
+	first = decklist.get(0);
+	//see if the (new) first line is an identity. If it is, we use that.
+	if(first.length() > 1 && first.charAt(0) == '#') {
+	    idName = first.substring(1);
+	    decklist.remove(0);
+	}
+
+
+	System.out.println("Deck Name: " + deckName);
+	System.out.println("Identity:  " + idName);
+
+	TreeMap<String, Integer> cardsInDeck = new TreeMap<>();
+	
+	//now we want to build a ditionary of card name - card numbers
+	for(String line : decklist) {
+	    if(line.length() > 0) {
+		try {
+		    String parts[] = line.split(" ", 2);
+		    int numInDeck = Integer.parseInt(parts[0]);
+		    String cardName = parts[1];
+		    System.out.println(String.format("Card: %s, Copies: %d", cardName, numInDeck));
+		    cardsInDeck.put(cardName, numInDeck);
+		} catch (Exception e) {
+		    //do nothing - we just skip this line
+		}		
+	    }
+	}
     }
 
     private static void process_preamble() {
