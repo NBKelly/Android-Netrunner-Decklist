@@ -27,9 +27,7 @@
 
   <target name="retrieve-dependencies" depends="init"
 	  description="Retrieve dependencies with Apache IVY">
-
     <ivy:retrieve type="jar" />
-
   </target>
   
   <target name="compile" depends="retrieve-dependencies"
@@ -37,16 +35,24 @@
     <!-- Compile the Java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="classpath"/>
   </target>
-  
-  
+
   <target name="dist" depends="compile"
-	  description="generate the distribution">
+        description="generate the distribution">
     <!-- Create the distribution directory -->
     <mkdir dir="${dist}/lib"/>
+
     
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/lib/MyProject-${DSTAMP}.jar" basedir="${build}"/>
-  </target>  
+    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}"/>
+
+    <!-- Copy a set of config files to the dist directory -->
+    <mkdir dir="${build}/conf"/>
+    <copy todir="${dist}/conf">
+      <fileset dir="${src}">
+	<exclude name="**/*.java"/>
+      </fileset>
+    </copy>
+  </target>
   
   <target name="clean" description="clean up">
     <!-- Delete the ${build} and ${dist} directory trees -->

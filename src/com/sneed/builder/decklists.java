@@ -1,5 +1,6 @@
 //This program exists to generate valid LaTeX from one (or many) decklist files
 //The output wont always work as intended (very big decks), but for the most part it should be fine
+package com.sneed.builder;
 
 import java.util.*;
 import java.util.stream.*;
@@ -147,7 +148,11 @@ public class decklists {
 	    stream.forEach(s -> builder.append(s).append("\n"));
 	} catch (IOException e) {
 	    //the file doesn't exist: have we tried fetching it yet this execution?
-	    System.err.println("% couldn't open decklist file. Checking online...");
+	    if(!regeneratedLibrary) {
+		System.err.println("% couldn't open decklist file. Checking online...");
+		if(download_library())
+		    return read_netrunner_library(fname);
+	    }
 	    
 	    //e.printStackTrace();
 	    return null;
@@ -157,15 +162,23 @@ public class decklists {
     }
 
     private static boolean download_library() {
+	regeneratedLibrary = true; //we only make one attempt at this per run
 	//TODO: put these urls in a conf file
-	URL nrdb = new URL("https://netrunnerdb.com/api/2.0/public/cards");
-	//BufferedReader in = new BufferedReader(new InputStreamReader(nrdb.openStream()));
-
-	File targetFile = new File("NRDB_cards.json");
-	InputStream stream = nrdb.openStream();
-	java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-	IOUtils.closeQuietly(stream);
+	try {
+	    URL nrdb = new URL("https://netrunnerdb.com/api/2.0/public/cards");
+	    //BufferedReader in = new BufferedReader(new InputStreamReader(nrdb.openStream()));
+	    
+	    File targetFile = new File("NRDB_cards.json");
+	    InputStream stream = nrdb.openStream();
+	    java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+	    
+	    IOUtils.closeQuietly(stream);
+	    return true;
+	} catch (Exception e) {
+	    //System.err.println(e.toString());
+	    System.err.println("%Cannot download netrunner cardpool. Please check your internet connection");
+	    return false;
+	}
     }
     
     private static void process_decklist(String s) {
