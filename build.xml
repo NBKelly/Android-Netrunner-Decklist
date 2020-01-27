@@ -29,22 +29,56 @@
 	  description="Retrieve dependencies with Apache IVY">
     <ivy:retrieve type="jar" />
   </target>
-  
+
+  <!-- external libraries classpath, we don't need sources and javadoc -->
+  <path id="classpath">
+    <fileset dir="${basedir}/">
+      <include name="${lib.dir}/*.jar" />
+      <exclude name="${lib.dir}/*sources.jar"/>
+      <exclude name="${lib.dir}/*javadoc.jar"/>
+    </fileset>
+  </path>
+
   <target name="compile" depends="retrieve-dependencies"
 	  description="compile the source">
     <!-- Compile the Java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="classpath"/>
   </target>
 
-  <target name="dist" depends="compile"
-        description="generate the distribution">
-    <!-- Create the distribution directory -->
-    <mkdir dir="${dist}/lib"/>
+  <!-- constructs the external libraries classpath name -->
+  <pathconvert property="classpath.name" pathsep=" ">
+    <path refid="classpath" />
+    <mapper>
+      <chainedmapper>
+	<flattenmapper />
+	<globmapper from="*.jar" to="lib/*.jar" />
+      </chainedmapper>
+    </mapper>
+  </pathconvert>
+	
+  <target name="copy-dependencies">
+    <copy todir="${dist}/lib">
+      <fileset dir="${lib.dir}" includes="**/*.jar" excludes="**/*sources.jar, **/*javadoc.jar" />
+    </copy>
+  </target>
 
+  <target name="dist" depends="compile, copy-dependencies"
+          description="generate the distribution">
+    <echo message="classpath.name : ${classpath.name} " />
+    
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}"/>
+    <mkdir dir="${dist}/lib"/>
+    
     
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}" manifest="${src}/META-INF/MANIFEST.MF"/>
-
+    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}">
+      <manifest>
+	<attribute name="Main-Class" value="builder.Decklists" />
+	<attribute name="Class-Path" value="${classpath.name}" />
+      </manifest>
+    </jar>
+    
     <!-- Copy a set of config files to the dist directory -->
     <copy todir="${dist}/conf">
       <fileset dir="${src}">
