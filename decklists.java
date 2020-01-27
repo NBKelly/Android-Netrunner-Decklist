@@ -7,6 +7,8 @@ import java.nio.file.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import com.google.gson.Gson;
+import java.net.*;
+import org.apache.commons.io.IOUtils;
 
 public class decklists {
     private class Library {
@@ -79,32 +81,34 @@ public class decklists {
     private static String decknamePrefix = "latexGeneratedDeckname";
     private static StringBuilder flush = new StringBuilder();
     private static Integer deckNum = 1;
+
+    private static boolean useMWL = false;
+    private static String MWLVersion = null;
+    private static boolean regeneratedLibrary = false;
+    
     public static void main(String[] args) {
 	//each argument is expected to be a decklist file
 	//the name of the file will be considered the name of the deck
-	// OVERRIDE if there is an _ as the first character of the first line - that is the name
-
-	//format of a file:
-	//  _DECKNAME (optional)
-	//  IDENTITY
-	//
-	//  card type
-	//  n card 1
-	//  ...
-	//  n card m
-	//  [whitespace]
-	//  card type
-	//  n card 1
-	//  ...
-	//  n card m
-
-	//extra-commands for latex (if you're a pro)
-
+	
 	process_preamble();
 
 	process_netrunner_library();
+
+	for(String s : args) {
+	    //if we are told to use an mwl, then do it
+	    if(s.equals("-mwl")) {
+		//TODO
+	    }
+	    //if we are told to redownload the decklist files, then do so
+	    //we can also re-download the mwl files
+	    else if (s.equals("-r")) {
+		
+	    }
+	}
 	
 	for(String s : args) {
+	    if(s.equals("-mwl") || s.equals("-r"))
+		continue;
 	    process_decklist(s);
 	    deckNum++;
 	}
@@ -139,15 +143,31 @@ public class decklists {
 
     private static String read_netrunner_library(String fname /*NRDB_cards.json*/){
 	StringBuilder builder = new StringBuilder();
-	try (Stream<String> stream = Files.lines( Paths.get(fname), StandardCharsets.UTF_8)) {
+	try (Stream<String> stream = Files.lines(Paths.get(fname), StandardCharsets.UTF_8)) {
 	    stream.forEach(s -> builder.append(s).append("\n"));
 	} catch (IOException e) {
-	    e.printStackTrace();
+	    //the file doesn't exist: have we tried fetching it yet this execution?
+	    System.err.println("% couldn't open decklist file. Checking online...");
+	    
+	    //e.printStackTrace();
 	    return null;
 	}
 	
 	return builder.toString();
     }
+
+    private static boolean download_library() {
+	//TODO: put these urls in a conf file
+	URL nrdb = new URL("https://netrunnerdb.com/api/2.0/public/cards");
+	//BufferedReader in = new BufferedReader(new InputStreamReader(nrdb.openStream()));
+
+	File targetFile = new File("NRDB_cards.json");
+	InputStream stream = nrdb.openStream();
+	java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+	IOUtils.closeQuietly(stream);
+    }
+    
     private static void process_decklist(String s) {
 	//first thing to do is read the decklist into a list
 	List<String> decklist;
