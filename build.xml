@@ -1,4 +1,4 @@
-<project name="ANR-Decklist" default="dist" basedir=".">
+<project name="ANR-Decklist" default="dist" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
   <description>
     simple example build file
   </description>
@@ -6,18 +6,36 @@
   <property name="src" location="src"/>
   <property name="build" location="build"/>
   <property name="dist" location="dist"/>
+  <property name="lib.dir"     value="lib"/>
+
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+  </path>
   
-  <target name="init">
+  <target name="bootstrap" description="Used to install the ivy task jar">
+    <mkdir dir="${user.home}/.ant/lib"/>
+    <get dest="${user.home}/.ant/lib/ivy.jar" src="http://search.maven.org/remotecontent?filepath=org/apache/ivy/ivy/2.5.0/ivy-2.5.0.jar"/>
+  </target>
+  
+  <target name="init" depends="bootstrap">
     <!-- Create the time stamp -->
     <tstamp/>
     <!-- Create the build directory structure used by compile -->
     <mkdir dir="${build}"/>
   </target>
+
+
+  <target name="retrieve-dependencies" depends="init"
+	  description="Retrieve dependencies with Apache IVY">
+
+    <ivy:retrieve type="jar" />
+
+  </target>
   
-  <target name="compile" depends="init"
+  <target name="compile" depends="retrieve-dependencies"
 	  description="compile the source">
     <!-- Compile the Java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}"/>
+    <javac srcdir="${src}" destdir="${build}" classpathref="classpath"/>
   </target>
   
   
@@ -29,10 +47,10 @@
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
     <jar jarfile="${dist}/lib/MyProject-${DSTAMP}.jar" basedir="${build}"/>
   </target>  
-
-    <target name="clean" description="clean up">
+  
+  <target name="clean" description="clean up">
     <!-- Delete the ${build} and ${dist} directory trees -->
     <delete dir="${build}"/>
     <delete dir="${dist}"/>
   </target>
-  </project>
+</project>
