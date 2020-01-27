@@ -1,0 +1,10 @@
+<ivy-module version="2.0">
+  <info organisation="net.sneed" module="ANR-Decklist" />
+
+  <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+    <dependency org="org.apache.commons" name="commons-lang3" rev="3.9"/>
+    <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+    <dependency org="com.google.code.gson" name="gson" rev="2.8.6"/>
+  </dependencies>
+</ivy-module>
