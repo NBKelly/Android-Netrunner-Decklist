@@ -1,6 +1,6 @@
 //This program exists to generate valid LaTeX from one (or many) decklist files
 //The output wont always work as intended (very big decks), but for the most part it should be fine
-package com.sneed.builder;
+package builder;
 
 import java.util.*;
 import java.util.stream.*;
@@ -11,7 +11,7 @@ import com.google.gson.Gson;
 import java.net.*;
 import org.apache.commons.io.IOUtils;
 
-public class decklists {
+public class Decklists {
     private class Library {
 	public String imageUrlTemplate;
 	public List<Card> data;

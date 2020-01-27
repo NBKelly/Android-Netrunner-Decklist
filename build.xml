@@ -43,10 +43,9 @@
 
     
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}"/>
+    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}" manifest="${src}/META-INF/MANIFEST.MF"/>
 
     <!-- Copy a set of config files to the dist directory -->
-    <mkdir dir="${build}/conf"/>
     <copy todir="${dist}/conf">
       <fileset dir="${src}">
 	<exclude name="**/*.java"/>
