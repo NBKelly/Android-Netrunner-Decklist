@@ -17,7 +17,7 @@
     <get dest="${user.home}/.ant/lib/ivy.jar" src="http://search.maven.org/remotecontent?filepath=org/apache/ivy/ivy/2.5.0/ivy-2.5.0.jar"/>
   </target>
   
-  <target name="init" depends="bootstrap">
+  <target name="init">
     <!-- Create the time stamp -->
     <tstamp/>
     <!-- Create the build directory structure used by compile -->
@@ -82,6 +82,7 @@
     <!-- Copy a set of config files to the dist directory -->
     <copy todir="${dist}/conf">
       <fileset dir="${src}">
+	<include name="**/*.conf"/>
 	<exclude name="**/*.java"/>
       </fileset>
     </copy>
