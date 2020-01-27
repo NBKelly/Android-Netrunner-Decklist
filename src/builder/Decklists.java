@@ -12,6 +12,34 @@ import java.net.*;
 import org.apache.commons.io.IOUtils;
 
 public class Decklists {
+    private class MWL {
+	public int id;
+	public String data_creation;
+	public String date_update;
+	public String code;
+	public String name;
+	public boolean active;
+	public String date_start;
+	public TreeMap<String, Entry> cards;
+    }
+
+    private class Entry {
+	//public String id;
+	public int global_penalty;
+	public int universal_faction_cost;
+	public int is_restricted;
+	public int deck_limit = -1;
+	public String CARD_NAME;
+    }
+
+    private class MWL_List {
+	public List<MWL> data;
+	public int total;
+	public boolean success;
+	public String version_number;
+	public String last_updated;
+    }
+    
     private class Library {
 	public String imageUrlTemplate;
 	public List<Card> data;
@@ -78,6 +106,7 @@ public class Decklists {
     }
 
     private static TreeMap<String, String> cards = new TreeMap<String, String>();
+    private static TreeMap<String, String> cardCodes = new TreeMap<String, String>();
     private static String decklistPrefix = "latexGeneratedDecklist";
     private static String decknamePrefix = "latexGeneratedDeckname";
     private static StringBuilder flush = new StringBuilder();
@@ -86,26 +115,38 @@ public class Decklists {
     private static boolean useMWL = false;
     private static String MWLVersion = null;
     private static boolean regeneratedLibrary = false;
+    private static MWL chosenMWL = null;
     
     public static void main(String[] args) {
 	//each argument is expected to be a decklist file
 	//the name of the file will be considered the name of the deck
-	
-	process_preamble();
-
-	process_netrunner_library();
 
 	for(String s : args) {
 	    //if we are told to use an mwl, then do it
 	    if(s.equals("-mwl")) {
 		//TODO
+		useMWL = true;
 	    }
 	    //if we are told to redownload the decklist files, then do so
 	    //we can also re-download the mwl files
 	    else if (s.equals("-r")) {
-		
+		System.err.println("%Downloading standard cardpool (-r option used)");
+		download_library();
 	    }
 	}
+	
+	process_preamble();
+
+	process_netrunner_library();
+
+	if(useMWL) {
+	    regeneratedLibrary = false;
+	    process_mwl_version();
+	    System.err.println("%Using mwl version: " + MWLVersion);
+
+	    process_netrunner_mwl();
+	}
+	    
 	
 	for(String s : args) {
 	    if(s.equals("-mwl") || s.equals("-r"))
@@ -119,11 +160,36 @@ public class Decklists {
 	System.out.println("\\end{document}");
     }
 
+    private static void process_mwl_version() {
+	String fname = "conf/mwl.conf";
+	List<String> mwlFile = read_mwl_version(fname);
+
+	while(mwlFile.size() > 0) {
+	    String line = mwlFile.remove(0);
+	    if(line.length() > 1 && line.charAt(0) != '#') {
+		MWLVersion = line;
+		break;
+	    }
+	}
+    }
+
+    private static List<String> read_mwl_version(String fname /*mwl.conf*/) {
+	List<String> res;
+	try (Stream<String> lines = Files.lines(Paths.get(fname))) {
+	    res = lines.collect(Collectors.toList());
+	} catch (Exception e) {
+	    res = new ArrayList<String>();
+	    res.add("Standard MWL 3.4b");
+	}
+
+	return res;
+    }
+    
     private static void process_netrunner_library() {
 	//for the time being, we'll just use a file saved on disk
 	//later on, we should be taking it directly from the API (and saving it to a file, then always using that file)
 	//but we can do that later :)
-	String fname = "NRDB_cards.json";
+	String fname = "conf/NRDB_cards.json";
 
 	//now let us try to process this file to a string
 	String libraryJSON = read_netrunner_library(fname);
@@ -137,9 +203,54 @@ public class Decklists {
 	for(Card c : library.data) {
 	    //put in cards (name, type)
 	    cards.put(c.title, c.type_code);
+	    cardCodes.put(c.code, c.title);
 	}
 
 	System.out.println("%" + library.data.size());	
+    }
+
+    private static void process_netrunner_mwl() {
+	//for the time being, we'll just use a file saved on disk
+	//later on, we should be taking it directly from the API (and saving it to a file, then always using that file)
+	//but we can do that later :)
+	String fname = "conf/NRDB_mwl.json";
+
+	//now let us try to process this file to a string
+	String mwlJSON = read_netrunner_mwl(fname);
+
+	boolean valid = mwlJSON != null;
+	System.out.println("%MWL read: " + valid);
+
+	Gson gson = new Gson();
+	MWL_List mlist = gson.fromJson(mwlJSON, MWL_List.class);
+
+	/*for(Card c : library.data) {
+	    //put in cards (name, type)
+	    cards.put(c.title, c.type_code);
+	}
+
+	System.out.println("%" + library.data.size());	*/
+	System.err.println("% MWL processed?");
+	System.err.println("% Number of MWL's: " + mlist.data.size());
+	System.err.println("% Chosen MWL: " + MWLVersion);
+
+	MWL myMWL = null;
+	for(MWL mwl : mlist.data) {
+	    System.err.println("% MWL - " + mwl.name);
+	    if(mwl.name.equals(MWLVersion))
+		myMWL = mwl;
+	}
+
+	System.err.println("% Cards on MWL: " + myMWL.cards.size());
+	chosenMWL = myMWL;
+	//TODO: figure this out
+	for(Map.Entry<String, Entry> entry : myMWL.cards.entrySet()) {
+	    String code = entry.getKey();
+	    Entry val = entry.getValue();
+	    String name = cardCodes.get(code);	    
+	    val.CARD_NAME = name;
+	    System.err.println("%CARD " + code + " is on the MWL");
+	}
     }
 
     private static String read_netrunner_library(String fname /*NRDB_cards.json*/){
@@ -161,6 +272,26 @@ public class Decklists {
 	return builder.toString();
     }
 
+    private static String read_netrunner_mwl(String fname /*NRDB_mwl.json*/){
+	StringBuilder builder = new StringBuilder();
+	try (Stream<String> stream = Files.lines(Paths.get(fname), StandardCharsets.UTF_8)) {
+	    stream.forEach(s -> builder.append(s).append("\n"));
+	} catch (IOException e) {
+	    //the file doesn't exist: have we tried fetching it yet this execution?
+	    if(!regeneratedLibrary) {
+		regeneratedLibrary = true;
+		System.err.println("% couldn't open mwl file. Checking online...");
+		if(download_mwl())
+		    return read_netrunner_mwl(fname);
+	    }
+	    
+	    //e.printStackTrace();
+	    return null;
+	}
+	
+	return builder.toString();
+    }
+
     private static boolean download_library() {
 	regeneratedLibrary = true; //we only make one attempt at this per run
 	//TODO: put these urls in a conf file
@@ -168,7 +299,7 @@ public class Decklists {
 	    URL nrdb = new URL("https://netrunnerdb.com/api/2.0/public/cards");
 	    //BufferedReader in = new BufferedReader(new InputStreamReader(nrdb.openStream()));
 	    
-	    File targetFile = new File("NRDB_cards.json");
+	    File targetFile = new File("conf/NRDB_cards.json");
 	    InputStream stream = nrdb.openStream();
 	    java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 	    
@@ -177,6 +308,26 @@ public class Decklists {
 	} catch (Exception e) {
 	    //System.err.println(e.toString());
 	    System.err.println("%Cannot download netrunner cardpool. Please check your internet connection");
+	    return false;
+	}
+    }
+
+    private static boolean download_mwl() {
+	regeneratedLibrary = true; //we only make one attempt at this per run
+	//TODO: put these urls in a conf file
+	try {
+	    URL nrdb = new URL("https://netrunnerdb.com/api/2.0/public/mwl");
+	    //BufferedReader in = new BufferedReader(new InputStreamReader(nrdb.openStream()));
+	    
+	    File targetFile = new File("conf/NRDB_mwl.json");
+	    InputStream stream = nrdb.openStream();
+	    java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+	    
+	    IOUtils.closeQuietly(stream);
+	    return true;
+	} catch (Exception e) {
+	    //System.err.println(e.toString());
+	    System.err.println("%Cannot download netrunner MWL. Please check your internet connection");
 	    return false;
 	}
     }
@@ -236,6 +387,8 @@ public class Decklists {
 			bins.put(type, bin);
 		    }
 
+		    //interface with MWL, if applicable
+		    
 		    bin.put(cardName, numInDeck);
 		} catch (Exception e) {
 		    //do nothing - we just skip this line
@@ -247,19 +400,51 @@ public class Decklists {
 	System.out.println("\\textbf{" + idName + "}\\\\");
 	boolean _first = true;
 	//now we have a list of binned cards: let's print that out
+	//here we also interface with the mwl (if applicable)
 	for(Map.Entry<String, TreeMap<String, Integer>> entry : bins.entrySet()) {
 	    String type = entry.getKey();
 	    TreeMap<String, Integer> bin = entry.getValue();
+	    int size = 0;
+	    for(Integer i : bin.values())
+		size += i;
 	    type = type.substring(0, 1).toUpperCase() + type.substring(1);
 
 	    if(!_first)
 		System.out.println("\\clb");
 	    _first = false;
 
-	    System.out.println(String.format("\\textbf{%s (%d)}\\\\", type, bin.size()));
+	    System.out.println(String.format("\\textbf{%s (%d)}\\\\", type, size));
 
 	    for(Map.Entry<String, Integer> entry2 : bin.entrySet()) {
 		String name = entry2.getKey();
+		//Entry mwlEntry = chosenMWL.cards.get(cardCode);
+
+		
+		//restricted: /wp
+		//banned: \times
+		//global_inf: \bullet
+		if(chosenMWL != null) {
+		    for(Entry mwlEntry : chosenMWL.cards.values()) {
+			if(mwlEntry.CARD_NAME.equals(name)) {
+			    System.err.println("%CARD ON MWL: " + name);
+			    
+			    if (mwlEntry.is_restricted == 1)
+				name = name + "$\\Psi$";
+			    else if (mwlEntry.global_penalty > 0) {
+				name = name + " ";
+				for(int i = 0; i < mwlEntry.global_penalty; i++)
+				    name = name + "$\\bullet$";
+			    }
+			    else if (mwlEntry.universal_faction_cost > 0) {
+				name = name + " ";
+				for(int i = 0; i < mwlEntry.universal_faction_cost; i++)
+				    name = name + "$\\bullet$";
+			    }
+			    else if(mwlEntry.deck_limit == 0)
+				name = name + " $\\Chi$";
+			}
+		    }
+		}
 		
 		Integer num = entry2.getValue();
 		System.out.println(String.format("%d %s\\\\", num, name));
@@ -300,16 +485,16 @@ public class Decklists {
     }
     
     private static void process_preamble() {
-	List<String> packages = read_packages("packages.conf");
+	List<String> packages = read_packages("conf/packages.conf");
 	System.out.println(process_packages(packages));
 
-	List<String> pgfmacros = read_pgf_macros("pgfmacros.conf");
+	List<String> pgfmacros = read_pgf_macros("conf/pgfmacros.conf");
 	System.out.println(process_pgf_macros(pgfmacros));
 
-	List<String> commands = read_commands("commands.conf");
+	List<String> commands = read_commands("conf/commands.conf");
 	System.out.println(process_commands(commands));
 
-	List<String> card = read_card("card.conf");
+	List<String> card = read_card("conf/card.conf");
 	System.out.println(process_card(card));
     }
 
