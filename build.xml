@@ -72,7 +72,7 @@
     
     
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/ANR-DeckList-${DSTAMP}.jar" basedir="${build}">
+    <jar jarfile="${dist}/ANR-DeckList.jar" basedir="${build}">
       <manifest>
 	<attribute name="Main-Class" value="builder.Decklists" />
 	<attribute name="Class-Path" value="${classpath.name}" />
