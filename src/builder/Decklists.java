@@ -10,87 +10,9 @@ import java.nio.charset.StandardCharsets;
 import com.google.gson.Gson;
 import java.net.*;
 import org.apache.commons.io.IOUtils;
+import builder.*;
 
 public class Decklists {
-    private class FactionList {
-	List<Faction> data;
-	public int total;
-	public boolean success;
-	public String version_number;
-	public String last_updated;
-    }
-
-    private class Faction {
-	String code;
-	String color;
-	boolean is_mini;
-	String name;
-	String side_code;
-    }
-
-    private class MWL {
-	public int id;
-	public String data_creation;
-	public String date_update;
-	public String code;
-	public String name;
-	public boolean active;
-	public String date_start;
-	public TreeMap<String, Entry> cards;
-    }
-
-    private class Entry {
-	//public String id;
-	public int global_penalty;
-	public int universal_faction_cost;
-	public int is_restricted;
-	public int deck_limit = -1;
-	public String CARD_NAME;
-    }
-
-    private class MWL_List {
-	public List<MWL> data;
-	public int total;
-	public boolean success;
-	public String version_number;
-	public String last_updated;
-    }
-    
-    private class Library {
-	public String imageUrlTemplate;
-	public List<Card> data;
-	public Integer total;
-	public boolean success;
-	public String version_number;
-	public String last_updated;
-    }
-
-    private class Card {
-	public String code;
-	public Integer deck_limit;
-	public String faction_code;
-	public Integer faction_cost;
-	
-	public String flavor;
-	public String illustrator;
-	public String influence_limit;
-	public String keywords;
-	
-	public Integer minimum_deck_size;
-	public String image_url;
-	public String pack_code;
-	public Integer position;
-
-	public Integer quantity;
-	public String side_code;
-	public String text;
-	public String title;
-	
-	public String type_code;
-	public Boolean uniqueness;
-	public Integer base_link;
-    }
-
     private static TreeMap<String, Faction> factions = new TreeMap<String, Faction>();
     private static TreeMap<String, String> cards = new TreeMap<String, String>();
     private static TreeMap<String, String> cardCodes = new TreeMap<String, String>();
