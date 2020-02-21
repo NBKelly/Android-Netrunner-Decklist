@@ -30,11 +30,26 @@ public class Decklists {
     private static MWL chosenMWL = null;
 
     private static boolean processFactionInfluence = false;
-    
+
+    private static void display_help() {
+	System.err.println(
+				   "%  ANR-Decklist Tool\n" +
+				   "%    usage: run.sh [-mwl,-r,-f,-h] list1 ... listN\n" +
+				   "%      [-mwl]: take mwl into consideration, using the data from mwl.conf\n" +
+				   "%      [-r]:   redownload the cardpool from nrdb\n" +
+				   "%      [-f]:   consider faction influence\n" +
+				   "%      [-h]:   display this help\n"
+			   );
+	System.exit(0);
+    }
     public static void main(String[] args) {
 	//each argument is expected to be a decklist file
 	//the name of the file will be considered the name of the deck
+	if(args.length == 0)
+	    display_help();
 
+
+	boolean forcedDL = false;
 	for(String s : args) {
 	    //if we are told to use an mwl, then do it
 	    if(s.equals("-mwl")) {
@@ -43,9 +58,19 @@ public class Decklists {
 	    }
 	    //if we are told to redownload the decklist files, then do so
 	    //we can also re-download the mwl files
-	    else if (s.equals("-r")) {
+	    else if (s.equals("-r") && !forcedDL) {
 		System.err.println("%Downloading standard cardpool (-r option used)");
 		download_library();
+
+		regeneratedLibrary = false;
+		process_mwl_version();
+		System.err.println("%Using mwl version: " + MWLVersion);	    
+		process_netrunner_mwl();
+		
+		regeneratedLibrary = false;
+		process_faction_list();
+
+		forcedDL = true;
 	    }
 
 	    else if (s.equals("-f")) {
@@ -53,29 +78,37 @@ public class Decklists {
 		processFactionInfluence = true;
 		//we should be able to regenerate the factions file from the api, if need be
 	    }
+
+	    else if (s.equals("-h")) {
+		display_help();
+	    }
 	}
 	
 	process_preamble();
 
 	process_netrunner_library();
 
-	if(useMWL) {
-	    boolean orgl = regeneratedLibrary;
-	    regeneratedLibrary = false;
-	    process_mwl_version();
-	    System.err.println("%Using mwl version: " + MWLVersion);
+	if(!forcedDL) {
+	    if(useMWL) {
+		boolean orgl = regeneratedLibrary;
+		regeneratedLibrary = false;
+		process_mwl_version();
+		System.err.println("%Using mwl version: " + MWLVersion);
+		
+		process_netrunner_mwl();
+		regeneratedLibrary = orgl;
+	    }
 	    
-	    process_netrunner_mwl();
-	    regeneratedLibrary = orgl;
+	    if (processFactionInfluence) {
+		boolean orgl = regeneratedLibrary;
+		regeneratedLibrary = false;
+		process_faction_list();
+		regeneratedLibrary = orgl;
+	    }
 	}
 
-	if (processFactionInfluence) {
-	    process_faction_list();
-	}
-	    
-	
 	for(String s : args) {
-	    if(s.equals("-mwl") || s.equals("-r") || s.equals("-f"))
+	    if(s.equals("-mwl") || s.equals("-r") || s.equals("-f") || s.equals("-h"))
 		continue;
 	    process_decklist(s);
 	    deckNum++;
@@ -93,6 +126,11 @@ public class Decklists {
 	boolean valid = factionFile != null;
 	System.out.println("%Faction List Read: " + valid);
 
+	if(!valid) {
+	    System.err.println("Factions invalid - try again");
+	    System.exit(1);
+	}
+	
 	Gson gson = new Gson();
 	FactionList fl = gson.fromJson(factionFile, FactionList.class);
 
