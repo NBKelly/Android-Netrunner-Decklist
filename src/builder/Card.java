@@ -1,6 +1,6 @@
 package builder;
 
-private class Card {
+public class Card {
     public String code;
     public Integer deck_limit;
     public String faction_code;
