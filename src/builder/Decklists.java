@@ -89,36 +89,6 @@ public class Decklists {
 	public String type_code;
 	public Boolean uniqueness;
 	public Integer base_link;
-
-	public Card(String code, int deck_limit, String faction_code, int faction_cost,
-		    String flavor, String illustrator, String influence_limit, String keywords,
-		    int minimum_deck_size, String image_url, String pack_code, int position,
-		    int quantity, String side_code, String text, String title,
-		    String type_code, boolean uniqueness, int base_link) {
-	    this.code = code;
-	    this.deck_limit = deck_limit;
-	    this.faction_code = faction_code;
-	    this.faction_cost = faction_cost;
-
-	    this.flavor = flavor;
-	    this.illustrator = illustrator;
-	    this.influence_limit = influence_limit;
-	    this.keywords = keywords;
-
-	    this.minimum_deck_size = minimum_deck_size;
-	    this.image_url = image_url;
-	    this.pack_code = pack_code;
-	    this.position = position;
-
-	    this.quantity = quantity;
-	    this.side_code = side_code;
-	    this.text = text;
-	    this.title = title;
-
-	    this.type_code = type_code;
-	    this.uniqueness = uniqueness;
-	    this.base_link = base_link;
-	}
     }
 
     private static TreeMap<String, Faction> factions = new TreeMap<String, Faction>();
