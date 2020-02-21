@@ -86,6 +86,15 @@
 	<exclude name="**/*.java"/>
       </fileset>
     </copy>
+
+    <!-- Copy a set of config files to the dist directory -->
+    <copy todir="${dist}">
+      <fileset dir="${src}">
+	<include name="run.sh"/>
+      </fileset>
+    </copy>
+
+    <chmod file="${dist}/run.sh" perm="700"/>
   </target>
   
   <target name="clean" description="clean up">
