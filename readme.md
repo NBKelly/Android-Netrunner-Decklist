@@ -85,4 +85,4 @@ If compiling with pdflatex, you probably have to mash your way through a handful
 GermanHayley deck comes from here: https://netrunnerdb.com/en/decklist/58336/-slovakia-wants-to-play-hayley-too-23rd-at-german-nationals 
 
 ### Issues
-I don't account for Alliance cards. I may implement this at a later data. Each individual card needs it's own special rule, which is quite tedious.
+I don't account for Alliance cards. I may implement this at a later data. Each individual card needs its own special rule, which is quite tedious.
